@@ -1,0 +1,75 @@
+name: Fullstack CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main # Зөвхөн main салбарт дээрх үйлдэл хийгдэнэ
+
+jobs:
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Кодыг clone хийх
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2. Node.js суулгах (frontend)
+      - name: Set up Node.js for frontend
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      # 3. Frontend dependencies суулгах
+      - name: Install frontend dependencies
+        run: cd frontend && npm install
+
+      # 4. Frontend build хийх
+      - name: Build frontend
+        run: cd frontend && npm run build
+
+      # 5. Frontend тест ажиллуулах
+      - name: Run frontend tests
+        run: cd frontend && npm test
+
+  backend-build:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Кодыг clone хийх
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2. Node.js суулгах (backend)
+      - name: Set up Node.js for backend
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      # 3. Backend dependencies суулгах
+      - name: Install backend dependencies
+        run: cd backend && npm install
+
+      # 4. Backend тест ажиллуулах
+      - name: Run backend tests
+        run: cd backend && npm test
+
+  deploy:
+    needs: [frontend-build, backend-build]
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Frontend deploy хийх (Netlify)
+      - name: Deploy frontend to Netlify
+        uses: nwtgck/actions-netlify@v1.2
+        with:
+          publish-dir: "./frontend/build"
+          production-branch: "main"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          netlify-token: ${{ secrets.NETLIFY_TOKEN }}
+
+      # 2. Backend deploy хийх (Heroku)
+      - name: Deploy backend to Heroku
+        uses: akhileshns/heroku-deploy@v3.12.12
+        with:
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: "your-backend-app-name"
+          heroku_email: "your-email@example.com"
+          app_dir: "backend"
